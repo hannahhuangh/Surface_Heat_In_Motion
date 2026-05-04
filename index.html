@@ -3,543 +3,334 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Earthquakes in Motion</title>
+  <title>Heat on the Surface</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
     :root {
-      --bg: #040814;
-      --surface: #091122;
-      --card: #0d1830;
-      --border: rgba(240, 186, 92, 0.18);
-      --text: #e9eef8;
-      --muted: #7a8394;
-      --accent: #f0ba5c;
-      --accent2: #ff7a59;
-      --blue: #75b8ff;
-      --deep: #a45cff;
+      --bg: #050711;
+      --surface: #0b1020;
+      --card: rgba(14, 20, 38, 0.92);
+      --border: rgba(255, 188, 92, 0.22);
+      --text: #f4efe7;
+      --muted: #8a91a3;
+      --accent: #ffb84d;
+      --hot: #ff5a3c;
+      --cool: #65c7ff;
     }
-
-    html, body {
-      height: 100%;
-      background: var(--bg);
-      color: var(--text);
-      font-family: 'Space Mono', monospace;
-      overflow-x: hidden;
-    }
-
+    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; overflow: hidden; }
     body { display: flex; flex-direction: column; min-height: 100vh; }
-
     header {
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1.5rem;
-      padding: 1.75rem 2.5rem 1rem;
-      border-bottom: 1px solid var(--border);
-      background: linear-gradient(180deg, #070d1b, #040814);
-      flex-shrink: 0;
+      flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-end;
+      gap: 1rem; padding: 1.4rem 2rem 0.9rem; border-bottom: 1px solid var(--border);
+      background: linear-gradient(180deg, #090d1a 0%, #050711 100%);
     }
-
-    .brand h1 {
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: clamp(1.9rem, 3vw, 3rem);
-      color: #fff8ec;
-      line-height: 1;
-    }
-
-    .brand p {
-      font-size: 0.62rem;
-      letter-spacing: 2.4px;
-      text-transform: uppercase;
-      color: var(--muted);
-      margin-top: 0.45rem;
-    }
-
-    .meta {
-      text-align: right;
-      font-size: 0.62rem;
-      letter-spacing: 1.5px;
-      color: var(--muted);
-      line-height: 2;
-      white-space: nowrap;
-    }
-
-    .dashboard {
-      display: grid;
-      grid-template-columns: 1fr 330px;
-      flex: 1;
-      min-height: 0;
-    }
-
-    .map-wrapper {
-      position: relative;
-      background: radial-gradient(circle at 50% 45%, #10203d 0%, #06101f 52%, #030711 100%);
-      overflow: hidden;
-      cursor: crosshair;
-      min-height: 560px;
-    }
-
+    .brand h1 { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.8rem, 3vw, 2.8rem); line-height: 1; color: #fff9ed; }
+    .brand p, .meta { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); line-height: 1.9; }
+    .brand p { margin-top: 0.35rem; }
+    .meta { text-align: right; }
+    main { flex: 1; display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
+    .map-wrapper { position: relative; background: #071020; overflow: hidden; cursor: crosshair; }
     #map-svg { width: 100%; height: 100%; display: block; }
-
-    .sidebar {
-      border-left: 1px solid var(--border);
-      background: var(--surface);
-      padding: 1.2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 1rem;
-      overflow-y: auto;
-    }
-
-    .panel {
-      background: rgba(13, 24, 48, 0.72);
-      border: 1px solid var(--border);
-      padding: 1rem;
-    }
-
-    .panel-title {
-      font-size: 0.6rem;
-      color: var(--muted);
-      letter-spacing: 2px;
-      text-transform: uppercase;
-      margin-bottom: 0.75rem;
-    }
-
-    .date-value {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.55rem;
-      font-style: italic;
-      color: #fff8ec;
-      line-height: 1.1;
-    }
-
-    .small-note {
-      margin-top: 0.55rem;
-      color: var(--muted);
-      font-size: 0.62rem;
-      line-height: 1.7;
-    }
-
-    .controls {
-      display: flex;
-      flex-direction: column;
-      gap: 0.8rem;
-    }
-
-    #play-btn {
-      background: none;
-      border: 1px solid rgba(240, 186, 92, 0.45);
-      color: var(--accent);
-      font-family: 'Space Mono', monospace;
-      font-size: 0.68rem;
-      letter-spacing: 1.5px;
-      padding: 0.55rem 0.85rem;
-      cursor: pointer;
-      transition: all 0.15s;
-      width: 100%;
-    }
-
-    #play-btn:hover { background: rgba(240, 186, 92, 0.1); color: #fff; }
-
-    #month-slider, #mag-filter {
-      width: 100%;
-      -webkit-appearance: none;
-      height: 4px;
-      border-radius: 2px;
-      background: rgba(240, 186, 92, 0.20);
-      outline: none;
-      cursor: pointer;
-    }
-
-    #month-slider::-webkit-slider-thumb,
-    #mag-filter::-webkit-slider-thumb {
-      -webkit-appearance: none;
-      width: 15px;
-      height: 15px;
-      border-radius: 50%;
-      background: var(--accent);
-      box-shadow: 0 0 10px rgba(240, 186, 92, 0.65);
-    }
-
-    .range-labels {
-      display: flex;
-      justify-content: space-between;
-      color: var(--muted);
-      font-size: 0.55rem;
-      margin-top: 0.4rem;
-    }
-
-    .stats-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 0.75rem;
-    }
-
-    .stat {
-      border: 1px solid rgba(240, 186, 92, 0.13);
-      padding: 0.75rem;
-      background: rgba(4, 8, 20, 0.32);
-    }
-
-    .stat .num {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.45rem;
-      color: var(--accent);
-      line-height: 1;
-    }
-
-    .stat .label {
-      margin-top: 0.35rem;
-      color: var(--muted);
-      font-size: 0.55rem;
-      letter-spacing: 1px;
-      text-transform: uppercase;
-      line-height: 1.45;
-    }
-
-    .legend-row { display: flex; align-items: center; gap: 0.55rem; margin-bottom: 0.5rem; font-size: 0.58rem; color: var(--muted); }
-    .legend-dot { width: 12px; height: 12px; border-radius: 50%; display: inline-block; }
-
-    .tooltip {
-      position: fixed;
-      display: none;
-      pointer-events: none;
-      z-index: 20;
-      background: rgba(4, 8, 20, 0.94);
-      border: 1px solid var(--border);
-      padding: 0.75rem 0.9rem;
-      max-width: 280px;
-      backdrop-filter: blur(8px);
-      box-shadow: 0 12px 40px rgba(0,0,0,0.35);
-    }
-
-    .tooltip .place { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1rem; color: #fff8ec; margin-bottom: 0.45rem; }
-    .tooltip .line { font-size: 0.62rem; color: var(--muted); line-height: 1.8; }
-    .tooltip b { color: var(--accent); font-weight: 700; }
-
     .loading {
-      position: absolute;
-      inset: 0;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      flex-direction: column;
-      gap: 1rem;
-      color: var(--muted);
-      letter-spacing: 2px;
-      font-size: 0.65rem;
-      background: rgba(4,8,20,0.68);
-      z-index: 10;
+      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 1rem; background: rgba(5,7,17,0.35); color: var(--muted); letter-spacing: 2px; font-size: 0.7rem; pointer-events: none;
     }
-    .loading.hidden { display: none; }
-    .spinner { width: 30px; height: 30px; border: 2px solid rgba(255,255,255,0.12); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+    .loading.hidden { opacity: 0; transition: opacity 0.4s; }
+    .spinner { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.12); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-
-    .country { fill: rgba(30, 54, 96, 0.42); stroke: rgba(185, 213, 255, 0.18); stroke-width: 0.55; }
-    .country:hover { fill: rgba(240, 186, 92, 0.08); }
-    .graticule { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 0.5; }
-    .quake { stroke: rgba(255,255,255,0.72); stroke-width: 0.55; cursor: pointer; mix-blend-mode: screen; }
-
-    .map-hint {
-      position: absolute;
-      left: 1.4rem;
-      bottom: 1.2rem;
-      font-size: 0.58rem;
-      color: rgba(233,238,248,0.45);
-      letter-spacing: 1.5px;
-      line-height: 2;
-      pointer-events: none;
+    .graticule { fill: none; stroke: rgba(255,255,255,0.055); stroke-width: 0.55; }
+    .borders { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 0.55; }
+    .land-mask { fill: rgba(255,255,255,0.035); stroke: none; }
+    .legend-panel, .hint {
+      position: absolute; background: rgba(5, 7, 17, 0.82); border: 1px solid var(--border); backdrop-filter: blur(8px);
+      padding: 0.8rem 1rem; font-size: 0.58rem; letter-spacing: 1.5px; color: var(--muted);
     }
-
-    footer {
-      border-top: 1px solid var(--border);
-      background: #040814;
-      color: var(--muted);
-      font-size: 0.56rem;
-      letter-spacing: 1.6px;
-      text-align: center;
-      padding: 0.7rem;
-      flex-shrink: 0;
-    }
-
-    @media (max-width: 920px) {
-      header { flex-direction: column; align-items: flex-start; }
-      .meta { text-align: left; white-space: normal; }
-      .dashboard { grid-template-columns: 1fr; }
-      .sidebar { border-left: none; border-top: 1px solid var(--border); }
-      .map-wrapper { min-height: 480px; }
-    }
+    .legend-panel { right: 1.2rem; bottom: 1.2rem; width: 210px; }
+    .legend-title { color: #e8e0d4; margin-bottom: 0.45rem; }
+    .legend-bar { height: 10px; border-radius: 99px; background: linear-gradient(to right, #88caff, #d8f0ff, #f4e879, #f59b3e, #d83b27); margin-bottom: 0.35rem; }
+    .legend-labels { display: flex; justify-content: space-between; }
+    .hint { left: 1.2rem; bottom: 1.2rem; line-height: 1.8; }
+    .panel { background: var(--surface); border-left: 1px solid var(--border); padding: 1.1rem; overflow-y: auto; }
+    .panel h2 { font-family: 'Playfair Display', serif; font-style: italic; color: #fff9ed; font-weight: 400; margin-bottom: 0.2rem; }
+    .panel .desc { color: var(--muted); font-size: 0.62rem; line-height: 1.8; letter-spacing: 1px; margin-bottom: 1rem; }
+    .date-card { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
+    .label { font-size: 0.56rem; color: var(--muted); letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 0.35rem; }
+    #date-value { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.4rem; color: #fff5e6; }
+    .controls { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.8rem; }
+    .play-row { display: flex; gap: 0.6rem; align-items: center; }
+    button { background: none; border: 1px solid rgba(255,188,92,0.35); color: var(--accent); font-family: 'Space Mono'; font-size: 0.62rem; letter-spacing: 1.5px; padding: 0.45rem 0.75rem; cursor: pointer; }
+    button:hover, button.active { background: rgba(255,184,77,0.1); border-color: var(--accent); color: #fff7ea; }
+    #time-slider { width: 100%; accent-color: var(--accent); }
+    .chart-card { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
+    .chart-card h3 { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; font-size: 1rem; margin-bottom: 0.2rem; }
+    svg text { font-family: 'Space Mono', monospace; }
+    .axis path, .axis line { stroke: rgba(255,255,255,0.18); }
+    .axis text { fill: var(--muted); font-size: 9px; }
+    .axis-label { fill: #aeb5c5; font-size: 9px; letter-spacing: 1px; }
+    .grid-line { stroke: rgba(255,255,255,0.08); stroke-dasharray: 3,3; }
+    #tooltip { position: fixed; display: none; pointer-events: none; z-index: 10; background: rgba(5,7,17,0.94); border: 1px solid var(--border); padding: 0.55rem 0.8rem; font-size: 0.62rem; color: #f7f0e6; letter-spacing: 1px; line-height: 1.7; }
+    .note { color: var(--muted); font-size: 0.55rem; line-height: 1.7; letter-spacing: 0.8px; }
+    @media (max-width: 950px) { html, body { overflow: auto; } main { grid-template-columns: 1fr; } .map-wrapper { min-height: 58vh; } .panel { border-left: none; border-top: 1px solid var(--border); } header { flex-direction: column; align-items: flex-start; } .meta { text-align: left; } }
   </style>
 </head>
 <body>
 <header>
   <div class="brand">
-    <h1>Earthquakes in Motion</h1>
-    <p>Mapping Global Seismic Activity Over Time · 2025</p>
+    <h1>Heat on the Surface</h1>
+    <p>Mapping MODIS Terra land surface temperature in 2025</p>
   </div>
   <div class="meta">
-    <div>DATA: USGS EARTHQUAKE CATALOG API</div>
-    <div>FILTER: GLOBAL · MAGNITUDE 4.5+</div>
-    <div id="data-status">LOADING DATA...</div>
+    <div>DATASET: NASA MODIS TERRA</div>
+    <div>ACCESS: GIBS WMS / REST REQUESTS</div>
+    <div>LAYER: LAND SURFACE TEMP DAY</div>
   </div>
 </header>
 
-<main class="dashboard">
+<main>
   <section class="map-wrapper" id="map-wrapper">
-    <div class="loading" id="loading"><div class="spinner"></div><div>FETCHING EARTHQUAKES...</div></div>
     <svg id="map-svg"></svg>
-    <div class="map-hint">SCROLL — ZOOM<br>DRAG — PAN<br>HOVER — EARTHQUAKE DETAILS</div>
+    <div class="loading" id="loading"><div class="spinner"></div><div>LOADING REAL MODIS LST IMAGE...</div></div>
+    <div class="hint">SCROLL — ZOOM<br>DRAG — PAN<br>HOVER — COORDINATES</div>
+    <div class="legend-panel">
+      <div class="legend-title">RENDERED LST COLOR SCALE</div>
+      <div class="legend-bar"></div>
+      <div class="legend-labels"><span>COLDER</span><span>WARMER</span></div>
+    </div>
   </section>
 
-  <aside class="sidebar">
-    <div class="panel">
-      <div class="panel-title">Current Month</div>
-      <div class="date-value" id="month-label">January 2025</div>
-      <p class="small-note">Use the slider or play button to watch earthquake activity change across 2025.</p>
-    </div>
+  <aside class="panel">
+    <h2>Interactive Surface Heat Map</h2>
+    <p class="desc">This map pulls real NASA MODIS Terra daytime land surface temperature imagery for selected 2025 dates using NASA GIBS WMS requests.</p>
 
-    <div class="panel controls">
-      <div class="panel-title">Time Controls</div>
-      <button id="play-btn">▶ PLAY</button>
-      <input type="range" id="month-slider" min="0" max="11" value="0" step="1" />
-      <div class="range-labels"><span>JAN</span><span>DEC</span></div>
-    </div>
-
-    <div class="panel controls">
-      <div class="panel-title">Magnitude Filter: <span id="mag-label">4.5+</span></div>
-      <input type="range" id="mag-filter" min="4.5" max="7" value="4.5" step="0.5" />
-      <div class="range-labels"><span>4.5+</span><span>7.0+</span></div>
-      <p class="small-note">Circle size represents magnitude. Larger circles are stronger earthquakes.</p>
-    </div>
-
-    <div class="panel">
-      <div class="panel-title">Visible Earthquakes</div>
-      <div class="stats-grid">
-        <div class="stat"><div class="num" id="count-stat">—</div><div class="label">Earthquakes</div></div>
-        <div class="stat"><div class="num" id="max-stat">—</div><div class="label">Largest Magnitude</div></div>
-        <div class="stat"><div class="num" id="depth-stat">—</div><div class="label">Deepest KM</div></div>
-        <div class="stat"><div class="num" id="avg-stat">—</div><div class="label">Avg Magnitude</div></div>
+    <div class="date-card">
+      <div class="label">Current date</div>
+      <div id="date-value">January 15, 2025</div>
+      <div class="controls">
+        <input type="range" id="time-slider" min="0" max="11" value="0" step="1" />
+        <div class="play-row">
+          <button id="play-btn">▶ PLAY</button>
+          <button class="speed-btn active" data-speed="900">1×</button>
+          <button class="speed-btn" data-speed="450">2×</button>
+        </div>
       </div>
     </div>
 
-    <div class="panel">
-      <div class="panel-title">Depth Color Legend</div>
-      <div class="legend-row"><span class="legend-dot" style="background:#75b8ff"></span><span>Shallow: 0–70 km</span></div>
-      <div class="legend-row"><span class="legend-dot" style="background:#f0ba5c"></span><span>Intermediate: 70–300 km</span></div>
-      <div class="legend-row"><span class="legend-dot" style="background:#ff7a59"></span><span>Deep: 300+ km</span></div>
-      <p class="small-note">Most damaging earthquakes are often shallow because they occur closer to the surface.</p>
+    <div class="chart-card">
+      <h3>Monthly Heat Index</h3>
+      <div class="label">computed from real MODIS image pixels</div>
+      <svg id="monthly-chart" width="100%" height="220"></svg>
     </div>
+
+    <div class="chart-card">
+      <h3>Latitude Heat Profile</h3>
+      <div class="label">current image · sampled by latitude band</div>
+      <svg id="lat-chart" width="100%" height="220"></svg>
+    </div>
+
+    <p class="note">Note: the charts use sampled pixel colors from NASA's rendered MODIS LST imagery, so they represent a relative heat intensity index rather than raw Celsius values.</p>
   </aside>
 </main>
 
-<footer>USGS EARTHQUAKE CATALOG GEOJSON · GLOBAL EARTHQUAKES MAGNITUDE 4.5+ · 2025</footer>
-
-<div class="tooltip" id="tooltip"></div>
+<div id="tooltip"></div>
 
 <script>
 const YEAR = 2025;
-const MONTHS = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December'
-];
+const LAYER = 'MODIS_Terra_Land_Surface_Temp_Day';
+const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const dates = MONTHS.map((_, i) => new Date(Date.UTC(YEAR, i, 15)));
+let currentIndex = 0;
+let interval = null;
+let speed = 900;
+const cache = new Map();
 
 const wrapper = document.getElementById('map-wrapper');
-const svg = d3.select('#map-svg');
-const tooltip = d3.select('#tooltip');
-const loading = document.getElementById('loading');
-const monthSlider = document.getElementById('month-slider');
-const magFilter = document.getElementById('mag-filter');
-const playBtn = document.getElementById('play-btn');
+const svgEl = document.getElementById('map-svg');
+const svg = d3.select(svgEl);
+const tooltip = document.getElementById('tooltip');
 
-let width, height, projection, path, zoomLayer, quakeLayer;
-let earthquakes = [];
-let currentMonth = 0;
-let minMagnitude = 4.5;
-let playing = false;
-let timer = null;
+function size() { return { w: wrapper.clientWidth, h: wrapper.clientHeight }; }
+let { w, h } = size();
+svg.attr('viewBox', `0 0 ${w} ${h}`);
 
-function getSize() {
-  return { width: wrapper.clientWidth, height: wrapper.clientHeight };
+let projection = d3.geoEquirectangular().scale(w / (2 * Math.PI)).translate([w / 2, h / 2]);
+let path = d3.geoPath(projection);
+
+svg.append('defs').append('clipPath').attr('id','clip').append('rect').attr('width', w).attr('height', h);
+svg.append('rect').attr('width', w).attr('height', h).attr('fill', '#071020');
+const image = svg.append('image').attr('x',0).attr('y',0).attr('width',w).attr('height',h).attr('preserveAspectRatio','none').attr('clip-path','url(#clip)').style('opacity',0.95);
+const graticule = svg.append('path').datum(d3.geoGraticule().step([30,30])()).attr('class','graticule').attr('d', path);
+const borderGroup = svg.append('g');
+
+function iso(d){ return d.toISOString().slice(0,10); }
+function display(d){ return d.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric', timeZone:'UTC'}); }
+function gibsUrl(date, imgW=900, imgH=450){
+  return 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi' +
+    '?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap' +
+    `&LAYERS=${LAYER}` +
+    '&BBOX=-180,-90,180,90' +
+    '&CRS=CRS:84' +
+    `&WIDTH=${imgW}&HEIGHT=${imgH}` +
+    '&FORMAT=image/png' +
+    `&TIME=${iso(date)}`;
 }
 
-function setupMap() {
-  ({ width, height } = getSize());
-  svg.attr('viewBox', `0 0 ${width} ${height}`);
-
-  projection = d3.geoNaturalEarth1()
-    .scale(width / 6.3)
-    .translate([width / 2, height / 2]);
-  path = d3.geoPath().projection(projection);
-
-  svg.selectAll('*').remove();
-  svg.append('rect').attr('width', width).attr('height', height).attr('fill', 'transparent');
-  zoomLayer = svg.append('g').attr('class', 'zoom-layer');
-
-  zoomLayer.append('path')
-    .datum(d3.geoGraticule10())
-    .attr('class', 'graticule')
-    .attr('d', path);
-
-  quakeLayer = zoomLayer.append('g').attr('class', 'quake-layer');
-
-  const zoom = d3.zoom()
-    .scaleExtent([1, 8])
-    .translateExtent([[0, 0], [width, height]])
-    .on('zoom', event => zoomLayer.attr('transform', event.transform));
-
-  svg.call(zoom);
+function updateMap(idx){
+  currentIndex = idx;
+  const date = dates[idx];
+  document.getElementById('date-value').textContent = display(date);
+  document.getElementById('time-slider').value = idx;
+  image.attr('href', gibsUrl(date, Math.round(w), Math.round(h)));
+  document.getElementById('loading').classList.add('hidden');
+  computeLatitudeProfile(date);
 }
 
-function usgsUrl() {
-  return `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${YEAR}-01-01&endtime=${YEAR}-12-31&minmagnitude=4.5&orderby=time-asc`;
-}
-
-function depthColor(depth) {
-  if (depth < 70) return '#75b8ff';
-  if (depth < 300) return '#f0ba5c';
-  return '#ff7a59';
-}
-
-function radiusScale(mag) {
-  return Math.max(3, Math.pow(mag - 3.7, 2) * 2.2);
-}
-
-function formatDate(ms) {
-  return new Date(ms).toLocaleDateString('en-US', {
-    year: 'numeric', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit'
-  });
-}
-
-function earthquakeMonth(d) {
-  return new Date(d.properties.time).getUTCMonth();
-}
-
-async function loadMapAndData() {
-  setupMap();
-
+async function loadBorders(){
   const world = await d3.json('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json');
-  const countries = topojson.feature(world, world.objects.countries);
-
-  zoomLayer.insert('g', '.quake-layer')
-    .selectAll('path')
-    .data(countries.features)
-    .join('path')
-    .attr('class', 'country')
-    .attr('d', path);
-
-  const data = await d3.json(usgsUrl());
-  earthquakes = data.features
-    .filter(d => d.geometry && d.geometry.coordinates && d.properties.mag !== null)
-    .map(d => ({
-      ...d,
-      lon: d.geometry.coordinates[0],
-      lat: d.geometry.coordinates[1],
-      depth: d.geometry.coordinates[2],
-      month: earthquakeMonth(d)
-    }));
-
-  document.getElementById('data-status').textContent = `${earthquakes.length.toLocaleString()} EARTHQUAKES LOADED`;
-  loading.classList.add('hidden');
-  update();
+  const land = topojson.feature(world, world.objects.land);
+  const borders = topojson.mesh(world, world.objects.countries, (a,b) => a !== b);
+  borderGroup.append('path').datum(land).attr('class','land-mask').attr('d', path);
+  borderGroup.append('path').datum(borders).attr('class','borders').attr('d', path);
 }
 
-function filteredData() {
-  return earthquakes.filter(d => d.month === currentMonth && d.properties.mag >= minMagnitude);
-}
-
-function updateStats(data) {
-  document.getElementById('count-stat').textContent = data.length.toLocaleString();
-  document.getElementById('max-stat').textContent = data.length ? d3.max(data, d => d.properties.mag).toFixed(1) : '—';
-  document.getElementById('depth-stat').textContent = data.length ? Math.round(d3.max(data, d => d.depth)) : '—';
-  document.getElementById('avg-stat').textContent = data.length ? d3.mean(data, d => d.properties.mag).toFixed(1) : '—';
-}
-
-function update() {
-  document.getElementById('month-label').textContent = `${MONTHS[currentMonth]} ${YEAR}`;
-  document.getElementById('mag-label').textContent = `${minMagnitude.toFixed(1)}+`;
-
-  const data = filteredData();
-  updateStats(data);
-
-  quakeLayer.selectAll('circle')
-    .data(data, d => d.id)
-    .join(
-      enter => enter.append('circle')
-        .attr('class', 'quake')
-        .attr('cx', d => projection([d.lon, d.lat])[0])
-        .attr('cy', d => projection([d.lon, d.lat])[1])
-        .attr('r', 0)
-        .attr('fill', d => depthColor(d.depth))
-        .attr('opacity', 0.78)
-        .on('mousemove', (event, d) => {
-          tooltip
-            .style('display', 'block')
-            .style('left', `${event.clientX + 15}px`)
-            .style('top', `${event.clientY - 15}px`)
-            .html(`
-              <div class="place">${d.properties.place || 'Unknown location'}</div>
-              <div class="line"><b>Magnitude:</b> ${d.properties.mag.toFixed(1)}</div>
-              <div class="line"><b>Depth:</b> ${d.depth.toFixed(1)} km</div>
-              <div class="line"><b>Date:</b> ${formatDate(d.properties.time)}</div>
-              <div class="line"><b>Coordinates:</b> ${d.lat.toFixed(2)}, ${d.lon.toFixed(2)}</div>
-            `);
-        })
-        .on('mouseleave', () => tooltip.style('display', 'none'))
-        .transition().duration(420)
-        .attr('r', d => radiusScale(d.properties.mag)),
-      update => update
-        .transition().duration(300)
-        .attr('cx', d => projection([d.lon, d.lat])[0])
-        .attr('cy', d => projection([d.lon, d.lat])[1])
-        .attr('r', d => radiusScale(d.properties.mag))
-        .attr('fill', d => depthColor(d.depth)),
-      exit => exit.transition().duration(260).attr('r', 0).remove()
-    );
-}
-
-monthSlider.addEventListener('input', function() {
-  currentMonth = +this.value;
-  update();
+const zoom = d3.zoom().scaleExtent([1,8]).on('zoom', event => {
+  image.attr('transform', event.transform);
+  graticule.attr('transform', event.transform);
+  borderGroup.attr('transform', event.transform);
 });
+svg.call(zoom);
 
-magFilter.addEventListener('input', function() {
-  minMagnitude = +this.value;
-  update();
-});
+svg.on('mousemove', event => {
+  const [mx,my] = d3.pointer(event);
+  const t = d3.zoomTransform(svgEl);
+  const coords = projection.invert([(mx - t.x)/t.k, (my - t.y)/t.k]);
+  if(!coords) return;
+  const [lon, lat] = coords;
+  if(lat < -90 || lat > 90 || lon < -180 || lon > 180) return;
+  tooltip.style.display = 'block';
+  tooltip.style.left = `${event.clientX + 14}px`;
+  tooltip.style.top = `${event.clientY - 8}px`;
+  tooltip.innerHTML = `<b>${display(dates[currentIndex])}</b><br>${Math.abs(lat).toFixed(2)}°${lat>=0?'N':'S'} · ${Math.abs(lon).toFixed(2)}°${lon>=0?'E':'W'}<br>MODIS Terra LST Day`;
+}).on('mouseleave', () => tooltip.style.display = 'none');
 
-function startPlay() {
-  playing = true;
-  playBtn.textContent = '⏸ PAUSE';
-  timer = setInterval(() => {
-    currentMonth = (currentMonth + 1) % 12;
-    monthSlider.value = currentMonth;
-    update();
-  }, 900);
+function heatIndexFromPixel(r,g,b,a){
+  if(a < 20) return null;
+  // Remove black/no-data and ocean-like very dark values.
+  if(r < 12 && g < 12 && b < 12) return null;
+  // Warm colors have high red/yellow; cool colors have more blue. Index is relative 0-100.
+  let val = 50 + (r - b) * 0.28 + (g - 90) * 0.08;
+  return Math.max(0, Math.min(100, val));
 }
 
-function stopPlay() {
-  playing = false;
-  playBtn.textContent = '▶ PLAY';
-  clearInterval(timer);
+function loadImageData(date, imgW=360, imgH=180){
+  const key = iso(date) + `-${imgW}x${imgH}`;
+  if(cache.has(key)) return cache.get(key);
+  const p = new Promise((resolve, reject) => {
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = imgW; canvas.height = imgH;
+      const ctx = canvas.getContext('2d', { willReadFrequently: true });
+      ctx.drawImage(img, 0, 0, imgW, imgH);
+      resolve(ctx.getImageData(0,0,imgW,imgH));
+    };
+    img.onerror = reject;
+    img.src = gibsUrl(date, imgW, imgH);
+  });
+  cache.set(key, p);
+  return p;
 }
 
-playBtn.addEventListener('click', () => playing ? stopPlay() : startPlay());
+async function computeMonthlyIndex(){
+  const vals = [];
+  for(const date of dates){
+    const img = await loadImageData(date, 300, 150);
+    let sum = 0, n = 0;
+    for(let i=0; i<img.data.length; i+=4){
+      const v = heatIndexFromPixel(img.data[i], img.data[i+1], img.data[i+2], img.data[i+3]);
+      if(v !== null){ sum += v; n++; }
+    }
+    vals.push({month: MONTHS[date.getUTCMonth()], value: n ? sum/n : 0});
+  }
+  drawMonthlyChart(vals);
+}
 
-window.addEventListener('resize', () => {
-  setupMap();
-  loadMapAndData();
-});
+async function computeLatitudeProfile(date){
+  const img = await loadImageData(date, 360, 180);
+  const bands = d3.range(-80, 81, 20).map(lat => ({lat, sum:0, n:0}));
+  const W = img.width, H = img.height;
+  for(let y0=0; y0<H; y0++){
+    const lat = 90 - (y0 / H) * 180;
+    const band = bands.reduce((a,b) => Math.abs(b.lat-lat) < Math.abs(a.lat-lat) ? b : a, bands[0]);
+    for(let x0=0; x0<W; x0+=3){
+      const i = (y0*W + x0)*4;
+      const v = heatIndexFromPixel(img.data[i], img.data[i+1], img.data[i+2], img.data[i+3]);
+      if(v !== null){ band.sum += v; band.n++; }
+    }
+  }
+  drawLatChart(bands.map(d => ({lat:d.lat, value:d.n?d.sum/d.n:0})));
+}
 
-loadMapAndData().catch(err => {
-  console.error(err);
-  loading.innerHTML = '<div>DATA LOAD FAILED. CHECK INTERNET CONNECTION OR API ACCESS.</div>';
+function addAxisLabels(g, iW, iH, xText, yText){
+  g.append('text').attr('class','axis-label').attr('x', iW/2).attr('y', iH+34).attr('text-anchor','middle').text(xText);
+  g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('x', -iH/2).attr('y', -36).attr('text-anchor','middle').text(yText);
+}
+function gridY(g, y, ticks, iW){ ticks.forEach(t => g.append('line').attr('class','grid-line').attr('x1',0).attr('x2',iW).attr('y1',y(t)).attr('y2',y(t))); }
+
+function drawMonthlyChart(data){
+  const svg = d3.select('#monthly-chart').html('');
+  const W = document.getElementById('monthly-chart').parentElement.clientWidth - 32, H = 210;
+  const m = {top:10,right:10,bottom:45,left:50}, iW = W-m.left-m.right, iH=H-m.top-m.bottom;
+  svg.attr('height',H);
+  const g = svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+  const x = d3.scaleBand().domain(data.map(d=>d.month)).range([0,iW]).padding(0.25);
+  const y = d3.scaleLinear().domain([0,100]).range([iH,0]);
+  gridY(g,y,y.ticks(4),iW);
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4));
+  addAxisLabels(g,iW,iH,'Month in 2025','Relative heat index');
+  g.selectAll('rect').data(data).enter().append('rect')
+    .attr('x',d=>x(d.month)).attr('y',d=>y(d.value)).attr('width',x.bandwidth()).attr('height',d=>iH-y(d.value))
+    .attr('fill',d=>d3.interpolateYlOrRd(d.value/100)).attr('rx',2).attr('opacity',0.9);
+}
+
+function drawLatChart(data){
+  const svg = d3.select('#lat-chart').html('');
+  const W = document.getElementById('lat-chart').parentElement.clientWidth - 32, H = 210;
+  const m = {top:10,right:10,bottom:45,left:50}, iW = W-m.left-m.right, iH=H-m.top-m.bottom;
+  svg.attr('height',H);
+  const g = svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+  const x = d3.scaleLinear().domain([-80,80]).range([0,iW]);
+  const y = d3.scaleLinear().domain([0,100]).range([iH,0]);
+  gridY(g,y,y.ticks(4),iW);
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => `${Math.abs(d)}°${d>=0?'N':'S'}`));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4));
+  addAxisLabels(g,iW,iH,'Latitude band','Relative heat index');
+  const line = d3.line().x(d=>x(d.lat)).y(d=>y(d.value)).curve(d3.curveCatmullRom);
+  g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#ffb84d').attr('stroke-width',2);
+  g.selectAll('circle').data(data).enter().append('circle').attr('cx',d=>x(d.lat)).attr('cy',d=>y(d.value)).attr('r',3).attr('fill','#ff5a3c');
+}
+
+const slider = document.getElementById('time-slider');
+slider.addEventListener('input', () => updateMap(+slider.value));
+document.getElementById('play-btn').addEventListener('click', function(){
+  if(interval){ clearInterval(interval); interval = null; this.textContent = '▶ PLAY'; return; }
+  this.textContent = '⏸ PAUSE';
+  interval = setInterval(() => updateMap((currentIndex + 1) % dates.length), speed);
 });
+document.querySelectorAll('.speed-btn').forEach(btn => btn.addEventListener('click', function(){
+  document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('active'));
+  this.classList.add('active'); speed = +this.dataset.speed;
+  if(interval){ clearInterval(interval); interval = setInterval(() => updateMap((currentIndex + 1) % dates.length), speed); }
+}));
+
+loadBorders().catch(console.error);
+updateMap(0);
+computeMonthlyIndex().catch(err => console.error('monthly chart failed', err));
 </script>
 </body>
 </html>
