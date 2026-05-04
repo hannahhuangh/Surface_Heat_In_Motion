@@ -3,452 +3,122 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Earthquakes in Motion — Exploratory Analysis</title>
+  <title>Surface Heat in Motion — Exploratory Analysis</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
-
-    :root {
-      --bg: #040814;
-      --surface: #091122;
-      --card: #0d1830;
-      --border: rgba(240, 186, 92, 0.18);
-      --text: #e9eef8;
-      --muted: #7a8394;
-      --accent: #f0ba5c;
-      --accent2: #ff7a59;
-      --blue: #75b8ff;
-    }
-
-    html, body { background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; }
-
-    header {
-      padding: 2rem 2.5rem 1.2rem;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      align-items: flex-end;
-      justify-content: space-between;
-      gap: 1.5rem;
-      background: linear-gradient(180deg, #070d1b, #040814);
-    }
-
-    header h1 {
-      font-family: 'Playfair Display', serif;
-      font-style: italic;
-      font-size: 2.35rem;
-      color: #fff8ec;
-      line-height: 1;
-    }
-
-    header p {
-      font-size: 0.62rem;
-      letter-spacing: 2.5px;
-      color: var(--muted);
-      margin-top: 0.35rem;
-      text-transform: uppercase;
-    }
-
-    header .tag {
-      font-size: 0.62rem;
-      letter-spacing: 2px;
-      color: var(--muted);
-      text-align: right;
-      line-height: 2;
-    }
-
-    .intro {
-      max-width: 960px;
-      margin: 2rem auto 0;
-      padding: 0 2.5rem;
-      font-size: 0.72rem;
-      line-height: 2;
-      color: var(--muted);
-      letter-spacing: 0.5px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1.5rem;
-      padding: 2rem 2.5rem;
-      max-width: 1400px;
-      margin: 0 auto;
-    }
-
-    .chart-card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      padding: 1.5rem;
-      position: relative;
-      min-height: 330px;
-    }
-
-    .chart-card.wide { grid-column: 1 / -1; }
-
-    .chart-card h2 {
-      font-family: 'Playfair Display', serif;
-      font-size: 1.12rem;
-      font-weight: 400;
-      font-style: italic;
-      color: #fff8ec;
-      margin-bottom: 0.3rem;
-    }
-
-    .chart-card .chart-desc {
-      font-size: 0.6rem;
-      letter-spacing: 1.5px;
-      color: var(--muted);
-      margin-bottom: 1rem;
-      text-transform: uppercase;
-    }
-
-    .chart-card .insight {
-      margin-top: 0.8rem;
-      font-size: 0.62rem;
-      letter-spacing: 0.8px;
-      color: #aab2c2;
-      border-left: 2px solid var(--accent);
-      padding-left: 0.6rem;
-      line-height: 1.8;
-    }
-
-    svg text { font-family: 'Space Mono', monospace; }
-    .axis line, .axis path { stroke: rgba(255,255,255,0.12); }
-    .axis text { fill: var(--muted); font-size: 9px; letter-spacing: 0.5px; }
-    .grid-line { stroke: rgba(255,255,255,0.07); stroke-dasharray: 3,3; }
-
-    .loading {
-      max-width: 900px;
-      margin: 2rem auto 0;
-      padding: 1rem;
-      color: var(--muted);
-      border: 1px solid var(--border);
-      background: var(--card);
-      font-size: 0.65rem;
-      letter-spacing: 1.5px;
-      text-align: center;
-    }
-    .loading.hidden { display: none; }
-
-    footer {
-      text-align: center;
-      padding: 2rem;
-      font-size: 0.6rem;
-      letter-spacing: 2px;
-      color: var(--muted);
-      border-top: 1px solid var(--border);
-    }
-
-    @media (max-width: 900px) {
-      header { flex-direction: column; align-items: flex-start; }
-      header .tag { text-align: left; }
-      .grid { grid-template-columns: 1fr; padding: 1.5rem; }
-      .chart-card.wide { grid-column: auto; }
-    }
+    :root { --bg:#050711; --surface:#0b1020; --card:#0e1426; --border:rgba(255,188,92,0.22); --text:#f4efe7; --muted:#8a91a3; --accent:#ffb84d; --hot:#ff5a3c; --cool:#65c7ff; }
+    html, body { background: var(--bg); color: var(--text); font-family:'Space Mono', monospace; }
+    header { padding:2rem 2.5rem 1.2rem; border-bottom:1px solid var(--border); display:flex; align-items:flex-end; justify-content:space-between; gap:1.5rem; background:linear-gradient(180deg,#090d1a,#050711); }
+    header h1 { font-family:'Playfair Display', serif; font-style:italic; font-size:2.35rem; line-height:1; color:#fff9ed; }
+    header p, header .tag { font-size:0.62rem; letter-spacing:2px; color:var(--muted); text-transform:uppercase; line-height:1.9; }
+    header p { margin-top:0.35rem; } header .tag { text-align:right; }
+    .intro { max-width:980px; margin:2rem auto 0; padding:0 2.5rem; color:var(--muted); font-size:0.72rem; line-height:2; letter-spacing:0.5px; }
+    .loading { max-width:900px; margin:2rem auto 0; padding:1rem; color:var(--muted); border:1px solid var(--border); background:var(--card); font-size:0.65rem; letter-spacing:1.5px; text-align:center; }
+    .loading.hidden { display:none; }
+    .grid { display:grid; grid-template-columns:1fr 1fr; gap:1.5rem; padding:2rem 2.5rem; max-width:1400px; margin:0 auto; }
+    .chart-card { background:var(--card); border:1px solid var(--border); padding:1.5rem; min-height:355px; }
+    .chart-card.wide { grid-column:1 / -1; }
+    .chart-card h2 { font-family:'Playfair Display',serif; font-size:1.12rem; font-weight:400; font-style:italic; color:#fff9ed; margin-bottom:0.3rem; }
+    .chart-desc { font-size:0.6rem; letter-spacing:1.5px; color:var(--muted); margin-bottom:1rem; text-transform:uppercase; }
+    .insight { margin-top:0.8rem; font-size:0.62rem; letter-spacing:0.8px; color:#b0b6c4; border-left:2px solid var(--accent); padding-left:0.6rem; line-height:1.8; }
+    .legend-row { display:flex; align-items:center; gap:0.65rem; margin-top:0.35rem; color:#b0b6c4; font-size:0.58rem; letter-spacing:1px; text-transform:uppercase; }
+    .legend-gradient { width:120px; height:8px; border-radius:999px; background:linear-gradient(to right,#ffffcc,#ffeda0,#feb24c,#f03b20,#800026); border:1px solid rgba(255,255,255,0.15); }
+    .legend-line { width:28px; height:0; border-top:2px solid #ffb84d; }
+    .legend-line.north { border-top-color:#ff5a3c; }
+    .legend-line.south { border-top-color:#65c7ff; border-top-style:dashed; }
+    .legend-note { color:#8a91a3; }
+    svg text { font-family:'Space Mono', monospace; } .axis path,.axis line{stroke:rgba(255,255,255,0.18)} .axis text{fill:var(--muted);font-size:9px}.axis-label{fill:#b0b6c4;font-size:10px;letter-spacing:1px}.grid-line{stroke:rgba(255,255,255,0.08);stroke-dasharray:3,3}.thumb{border:1px solid rgba(255,255,255,0.14)}
+    footer { text-align:center; padding:2rem; font-size:0.6rem; letter-spacing:2px; color:var(--muted); border-top:1px solid var(--border); }
+    @media(max-width:900px){ header{flex-direction:column;align-items:flex-start}.tag{text-align:left!important}.grid{grid-template-columns:1fr;padding:1.5rem}.chart-card.wide{grid-column:auto} }
   </style>
 </head>
 <body>
 <header>
-  <div>
-    <h1>Earthquakes in Motion</h1>
-    <p>Exploratory Analysis · DSC 106 · Project 3 Checkpoint</p>
-  </div>
-  <div class="tag">
-    <span>DATASET: USGS EARTHQUAKE CATALOG</span><br>
-    <span>FORMAT: GEOJSON</span><br>
-    <span>PERIOD: 2025 · GLOBAL · MAG 4.5+</span>
-  </div>
+  <div><h1>Heat on the Surface</h1><p>Exploratory Analysis · DSC 106 · Project 3 Checkpoint</p></div>
+  <div class="tag"><span>DATASET: NASA MODIS TERRA</span><br><span>ACCESS: GIBS WMS / REST REQUESTS</span><br><span>PERIOD: 2025 · GLOBAL · MONTHLY SAMPLES</span></div>
 </header>
-
-<p class="intro">
-  This exploratory analysis uses USGS Earthquake Catalog GeoJSON data for global earthquakes in 2025 with magnitude 4.5 or higher. These charts helped shape the final interactive visualization by identifying useful encodings: circle size for magnitude, color for depth, and a time slider for monthly activity.
-</p>
-
-<div class="loading" id="loading">FETCHING LIVE USGS EARTHQUAKE DATA...</div>
-
+<p class="intro">This page uses real NASA MODIS Terra daytime land surface temperature imagery from GIBS. The charts are computed by loading monthly MODIS LST map images, sampling their pixels, and calculating relative heat-intensity summaries. Because GIBS serves rendered imagery, the index values are relative color-based measurements rather than raw Celsius values.</p>
+<div class="loading" id="loading">FETCHING REAL NASA MODIS LAND SURFACE TEMPERATURE IMAGERY...</div>
 <div class="grid" id="charts" style="display:none;">
-  <div class="chart-card">
-    <h2>1. Earthquake Count by Month</h2>
-    <div class="chart-desc">GLOBAL EARTHQUAKES · MAGNITUDE 4.5+ · 2025</div>
-    <svg id="chart1" width="100%" height="220"></svg>
-    <p class="insight" id="insight1">▲ FINDING: Monthly counts help justify using a time slider as the main interaction.</p>
-  </div>
-
-  <div class="chart-card">
-    <h2>2. Magnitude Distribution</h2>
-    <div class="chart-desc">HISTOGRAM · EARTHQUAKE MAGNITUDE</div>
-    <svg id="chart2" width="100%" height="220"></svg>
-    <p class="insight">▲ FINDING: Most earthquakes in this filtered dataset are moderate; very large earthquakes are rare but visually important.</p>
-  </div>
-
-  <div class="chart-card">
-    <h2>3. Depth Distribution</h2>
-    <div class="chart-desc">HISTOGRAM · DEPTH IN KILOMETERS</div>
-    <svg id="chart3" width="100%" height="220"></svg>
-    <p class="insight">▲ FINDING: Earthquake depth is strongly skewed, so color categories make depth easier to read than a continuous scale.</p>
-  </div>
-
-  <div class="chart-card">
-    <h2>4. Magnitude vs. Depth</h2>
-    <div class="chart-desc">SCATTER PLOT · STRENGTH COMPARED TO DEPTH</div>
-    <svg id="chart4" width="100%" height="220"></svg>
-    <p class="insight">▲ FINDING: Magnitude and depth do not follow one simple pattern, so both variables should be visible at once.</p>
-  </div>
-
-  <div class="chart-card">
-    <h2>5. Largest Earthquake Each Month</h2>
-    <div class="chart-desc">MONTHLY MAXIMUM MAGNITUDE</div>
-    <svg id="chart5" width="100%" height="220"></svg>
-    <p class="insight">▲ FINDING: Even months with fewer earthquakes may contain one especially strong event.</p>
-  </div>
-
-  <div class="chart-card">
-    <h2>6. Top Reported Regions</h2>
-    <div class="chart-desc">GROUPED FROM USGS PLACE FIELD</div>
-    <svg id="chart6" width="100%" height="220"></svg>
-    <p class="insight">▲ FINDING: The place field reveals regional clustering around active plate boundaries.</p>
-  </div>
+  <div class="chart-card"><h2>1. Monthly Surface Heat Index</h2><div class="chart-desc">Mean sampled heat intensity by month</div><svg id="chart1" width="100%" height="230"></svg><div class="legend-row"><span>Cooler</span><span class="legend-gradient"></span><span>Hotter</span><span class="legend-note">Color = relative heat index</span></div><p class="insight" id="insight1">▲ FINDING: Monthly values reveal the seasonal surface-heating cycle.</p></div>
+  <div class="chart-card"><h2>2. Latitude Heat Gradient</h2><div class="chart-desc">Average heat index by latitude band</div><svg id="chart2" width="100%" height="230"></svg><div class="legend-row"><span class="legend-line"></span><span>Line = average heat index by latitude band</span></div><p class="insight">▲ FINDING: Heat intensity varies strongly by latitude, supporting map-based regional exploration.</p></div>
+  <div class="chart-card"><h2>3. Seasonal Comparison</h2><div class="chart-desc">Winter · Spring · Summer · Fall seasonal summaries</div><svg id="chart3" width="100%" height="230"></svg><div class="legend-row"><span>Cooler</span><span class="legend-gradient"></span><span>Hotter</span><span class="legend-note">Color = relative heat index</span></div><p class="insight">▲ FINDING: Seasonal snapshots show how surface heat shifts between hemispheres over the year.</p></div>
+  <div class="chart-card"><h2>4. Heat Intensity Distribution</h2><div class="chart-desc">Histogram of sampled pixels across all months</div><svg id="chart4" width="100%" height="230"></svg><div class="legend-row"><span>Cooler</span><span class="legend-gradient"></span><span>Hotter</span><span class="legend-note">Color = relative heat index bin</span></div><p class="insight">▲ FINDING: Pixel distributions show that the map contains both cool and warm land-surface zones.</p></div>
+  <div class="chart-card"><h2>5. Northern vs. Southern Hemisphere</h2><div class="chart-desc">Monthly mean heat index by hemisphere</div><svg id="chart5" width="100%" height="230"></svg><div class="legend-row"><span class="legend-line north"></span><span>Northern Hemisphere</span><span class="legend-line south"></span><span>Southern Hemisphere</span></div><p class="insight">▲ FINDING: The hemispheres show opposite seasonal timing, making a time slider useful.</p></div>
+  <div class="chart-card"><h2>6. Monthly MODIS Snapshots</h2><div class="chart-desc">Real GIBS images used for analysis</div><svg id="chart6" width="100%" height="230"></svg><p class="insight">▲ FINDING: The raw image frames confirm that the analysis is based on actual NASA MODIS imagery.</p></div>
 </div>
-
-<footer>DATA SOURCED FROM USGS EARTHQUAKE CATALOG API · DSC 106 PROJECT 3</footer>
-
+<footer>DATA SOURCED FROM NASA MODIS TERRA LAND SURFACE TEMPERATURE VIA GIBS WMS · DSC 106 PROJECT 3</footer>
 <script>
-const YEAR = 2025;
-const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
-const fullMonths = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const YEAR=2025, LAYER='MODIS_Terra_Land_Surface_Temp_Day';
+const MONTHS=['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+const dates=MONTHS.map((_,i)=>new Date(Date.UTC(YEAR,i,15)));
+const cache=new Map();
+function iso(d){return d.toISOString().slice(0,10)}
+function gibsUrl(date,w=360,h=180){return 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi'+'?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap'+`&LAYERS=${LAYER}`+'&BBOX=-180,-90,180,90'+'&CRS=CRS:84'+`&WIDTH=${w}&HEIGHT=${h}`+'&FORMAT=image/png'+`&TIME=${iso(date)}`}
+function heatIndexFromPixel(r,g,b,a){ if(a<20) return null; if(r<12&&g<12&&b<12) return null; let val=50+(r-b)*0.28+(g-90)*0.08; return Math.max(0,Math.min(100,val)); }
+function loadImageData(date,w=360,h=180){ const key=iso(date)+`-${w}x${h}`; if(cache.has(key)) return cache.get(key); const p=new Promise((resolve,reject)=>{ const img=new Image(); img.crossOrigin='anonymous'; img.onload=()=>{ const c=document.createElement('canvas'); c.width=w;c.height=h; const ctx=c.getContext('2d',{willReadFrequently:true}); ctx.drawImage(img,0,0,w,h); resolve(ctx.getImageData(0,0,w,h)); }; img.onerror=reject; img.src=gibsUrl(date,w,h); }); cache.set(key,p); return p; }
+function width(id){ return document.getElementById(id).parentElement.clientWidth-48; }
+function addLabels(g,iW,iH,x,y){ g.append('text').attr('class','axis-label').attr('x',iW/2).attr('y',iH+42).attr('text-anchor','middle').text(x); g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('x',-iH/2).attr('y',-42).attr('text-anchor','middle').text(y); }
+function gridY(g,y,ticks,iW){ticks.forEach(t=>g.append('line').attr('class','grid-line').attr('x1',0).attr('x2',iW).attr('y1',y(t)).attr('y2',y(t)))}
+function gridX(g,x,ticks,iH){ticks.forEach(t=>g.append('line').attr('class','grid-line').attr('y1',0).attr('y2',iH).attr('x1',x(t)).attr('x2',x(t)))}
+async function buildData(){ const monthly=[], allPixels=[], latBands=d3.range(-80,81,20).map(lat=>({lat,sum:0,n:0})), hemi=MONTHS.map((m,i)=>({month:m,north:0,nN:0,south:0,nS:0})); for(let mi=0; mi<dates.length; mi++){ const img=await loadImageData(dates[mi]); let sum=0,n=0; const W=img.width,H=img.height; for(let y=0;y<H;y+=2){ const lat=90-(y/H)*180; const band=latBands.reduce((a,b)=>Math.abs(b.lat-lat)<Math.abs(a.lat-lat)?b:a,latBands[0]); for(let x=0;x<W;x+=2){ const idx=(y*W+x)*4; const v=heatIndexFromPixel(img.data[idx],img.data[idx+1],img.data[idx+2],img.data[idx+3]); if(v!==null){ sum+=v;n++; allPixels.push(v); band.sum+=v;band.n++; if(lat>=0){hemi[mi].north+=v;hemi[mi].nN++;}else{hemi[mi].south+=v;hemi[mi].nS++;} } } } monthly.push({month:MONTHS[mi],value:n?sum/n:0,date:dates[mi]}); }
+ return {monthly, allPixels, lat:latBands.map(d=>({lat:d.lat,value:d.n?d.sum/d.n:0})), hemi:hemi.map(d=>({month:d.month,north:d.nN?d.north/d.nN:0,south:d.nS?d.south/d.nS:0}))}; }
+function chartFrame(id){ const W=width(id),H=225,m={top:12,right:16,bottom:55,left:58},iW=W-m.left-m.right,iH=H-m.top-m.bottom; const svg=d3.select('#'+id).attr('height',H).html(''); const g=svg.append('g').attr('transform',`translate(${m.left},${m.top})`); return {svg,g,W,H,m,iW,iH}; }
+function drawMonthly(data){ const {g,iW,iH}=chartFrame('chart1'); const x=d3.scaleBand().domain(data.map(d=>d.month)).range([0,iW]).padding(.25), y=d3.scaleLinear().domain([0,100]).range([iH,0]); gridY(g,y,y.ticks(4),iW); g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)); g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4)); addLabels(g,iW,iH,'Month in 2025','Relative heat index'); g.selectAll('rect').data(data).enter().append('rect').attr('x',d=>x(d.month)).attr('y',d=>y(d.value)).attr('width',x.bandwidth()).attr('height',d=>iH-y(d.value)).attr('fill',d=>d3.interpolateYlOrRd(d.value/100)).attr('rx',2); const max=data.reduce((a,b)=>b.value>a.value?b:a,data[0]); document.getElementById('insight1').textContent=`▲ FINDING: ${max.month} has the highest sampled surface heat intensity among the monthly frames.`; }
+function drawLat(data){ const {g,iW,iH}=chartFrame('chart2'); const x=d3.scaleLinear().domain([-80,80]).range([0,iW]), y=d3.scaleLinear().domain([0,100]).range([iH,0]); gridY(g,y,y.ticks(4),iW); g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d=>`${Math.abs(d)}°${d>=0?'N':'S'}`)); g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4)); addLabels(g,iW,iH,'Latitude band','Relative heat index'); const line=d3.line().x(d=>x(d.lat)).y(d=>y(d.value)).curve(d3.curveCatmullRom); g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#ffb84d').attr('stroke-width',2); g.selectAll('circle').data(data).enter().append('circle').attr('cx',d=>x(d.lat)).attr('cy',d=>y(d.value)).attr('r',3).attr('fill','#ff5a3c'); }
+function drawSeasonal(data){
+  const chosen = [
+    { season: 'WINTER', sampleMonth: 'JAN', ...data[0] },
+    { season: 'SPRING', sampleMonth: 'APR', ...data[3] },
+    { season: 'SUMMER', sampleMonth: 'JUL', ...data[6] },
+    { season: 'FALL',   sampleMonth: 'OCT', ...data[9] }
+  ];
 
-function cardWidth(id) {
-  return document.getElementById(id).parentElement.clientWidth - 48;
-}
+  const {g,iW,iH}=chartFrame('chart3');
+  const x=d3.scaleBand().domain(chosen.map(d=>d.season)).range([0,iW]).padding(.35);
+  const y=d3.scaleLinear().domain([0,100]).range([iH,0]);
 
-function makeGridlines(g, scale, ticks, width, axis = 'y') {
-  ticks.forEach(t => {
-    g.append('line')
-      .attr('class', 'grid-line')
-      .attr(axis === 'y' ? 'x1' : 'y1', 0)
-      .attr(axis === 'y' ? 'x2' : 'y2', width)
-      .attr(axis === 'y' ? 'y1' : 'x1', scale(t))
-      .attr(axis === 'y' ? 'y2' : 'x2', scale(t));
-  });
-}
+  gridY(g,y,y.ticks(4),iW);
 
-function usgsUrl() {
-  return `https://earthquake.usgs.gov/fdsnws/event/1/query?format=geojson&starttime=${YEAR}-01-01&endtime=${YEAR}-12-31&minmagnitude=4.5&orderby=time-asc`;
-}
+  g.append('g')
+    .attr('class','axis')
+    .attr('transform',`translate(0,${iH})`)
+    .call(d3.axisBottom(x).tickSize(0));
 
-function parseRegion(place) {
-  if (!place) return 'Unknown';
-  const parts = place.split(',');
-  return parts[parts.length - 1].trim();
-}
+  g.append('g')
+    .attr('class','axis')
+    .call(d3.axisLeft(y).ticks(4));
 
-function depthColor(depth) {
-  if (depth < 70) return '#75b8ff';
-  if (depth < 300) return '#f0ba5c';
-  return '#ff7a59';
-}
-
-async function loadData() {
-  const raw = await d3.json(usgsUrl());
-  return raw.features
-    .filter(d => d.geometry && d.geometry.coordinates && d.properties.mag !== null)
-    .map(d => ({
-      mag: +d.properties.mag,
-      place: d.properties.place || 'Unknown',
-      region: parseRegion(d.properties.place || 'Unknown'),
-      time: new Date(d.properties.time),
-      month: new Date(d.properties.time).getUTCMonth(),
-      lon: +d.geometry.coordinates[0],
-      lat: +d.geometry.coordinates[1],
-      depth: +d.geometry.coordinates[2]
-    }));
-}
-
-function drawMonthlyCounts(data) {
-  const counts = d3.rollups(data, v => v.length, d => d.month)
-    .map(([month, count]) => ({ month, count }));
-  const monthData = d3.range(12).map(m => ({ month: m, count: counts.find(d => d.month === m)?.count || 0 }));
-
-  const maxMonth = monthData.reduce((a,b) => b.count > a.count ? b : a, monthData[0]);
-  document.getElementById('insight1').textContent = `▲ FINDING: ${fullMonths[maxMonth.month]} has the highest count in this filtered dataset, supporting a month-by-month time slider.`;
-
-  const W = cardWidth('chart1'), H = 200;
-  const m = { top: 10, right: 10, bottom: 30, left: 45 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart1').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scaleBand().domain(MONTHS).range([0, iW]).padding(0.25);
-  const y = d3.scaleLinear().domain([0, d3.max(monthData, d => d.count) * 1.12]).nice().range([iH, 0]);
-  makeGridlines(g, y, y.ticks(4), iW);
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(4).tickSize(3)).select('.domain').remove();
+  addLabels(g,iW,iH,'Season in 2025','Relative heat index');
 
   g.selectAll('rect')
-    .data(monthData)
+    .data(chosen)
     .enter().append('rect')
-    .attr('x', d => x(MONTHS[d.month]))
-    .attr('y', d => y(d.count))
-    .attr('width', x.bandwidth())
-    .attr('height', d => iH - y(d.count))
-    .attr('fill', d => d.month === maxMonth.month ? '#ff7a59' : '#f0ba5c')
-    .attr('rx', 2)
-    .attr('opacity', 0.88);
+    .attr('x',d=>x(d.season))
+    .attr('y',d=>y(d.value))
+    .attr('width',x.bandwidth())
+    .attr('height',d=>iH-y(d.value))
+    .attr('fill',d=>d3.interpolateYlOrRd(d.value/100))
+    .attr('rx',2);
+
+  g.selectAll('.sample-month-label')
+    .data(chosen)
+    .enter().append('text')
+    .attr('class','sample-month-label')
+    .attr('x',d=>x(d.season)+x.bandwidth()/2)
+    .attr('y',d=>y(d.value)-7)
+    .attr('text-anchor','middle')
+    .attr('fill','#b0b6c4')
+    .attr('font-size','9px')
+    .text(d=>d.sampleMonth);
 }
-
-function drawMagnitudeHistogram(data) {
-  const W = cardWidth('chart2'), H = 200;
-  const m = { top: 10, right: 10, bottom: 30, left: 45 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart2').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scaleLinear().domain([4.5, d3.max(data, d => d.mag)]).nice().range([0, iW]);
-  const bins = d3.bin().domain(x.domain()).thresholds(d3.range(4.5, 8.6, 0.25))(data.map(d => d.mag));
-  const y = d3.scaleLinear().domain([0, d3.max(bins, d => d.length)]).nice().range([iH, 0]);
-  makeGridlines(g, y, y.ticks(4), iW);
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(4).tickSize(3)).select('.domain').remove();
-
-  g.selectAll('rect')
-    .data(bins)
-    .enter().append('rect')
-    .attr('x', d => x(d.x0) + 1)
-    .attr('y', d => y(d.length))
-    .attr('width', d => Math.max(0, x(d.x1) - x(d.x0) - 2))
-    .attr('height', d => iH - y(d.length))
-    .attr('fill', '#f0ba5c')
-    .attr('opacity', 0.82)
-    .attr('rx', 1);
-}
-
-function drawDepthHistogram(data) {
-  const W = cardWidth('chart3'), H = 200;
-  const m = { top: 10, right: 10, bottom: 30, left: 45 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart3').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scaleLinear().domain([0, d3.quantile(data.map(d => d.depth).sort(d3.ascending), 0.98)]).nice().range([0, iW]);
-  const filtered = data.filter(d => d.depth <= x.domain()[1]);
-  const bins = d3.bin().domain(x.domain()).thresholds(20)(filtered.map(d => d.depth));
-  const y = d3.scaleLinear().domain([0, d3.max(bins, d => d.length)]).nice().range([iH, 0]);
-  makeGridlines(g, y, y.ticks(4), iW);
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(4).tickSize(3)).select('.domain').remove();
-
-  g.selectAll('rect')
-    .data(bins)
-    .enter().append('rect')
-    .attr('x', d => x(d.x0) + 1)
-    .attr('y', d => y(d.length))
-    .attr('width', d => Math.max(0, x(d.x1) - x(d.x0) - 2))
-    .attr('height', d => iH - y(d.length))
-    .attr('fill', d => depthColor((d.x0 + d.x1) / 2))
-    .attr('opacity', 0.82)
-    .attr('rx', 1);
-}
-
-function drawScatter(data) {
-  const W = cardWidth('chart4'), H = 200;
-  const m = { top: 10, right: 15, bottom: 30, left: 45 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart4').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scaleLinear().domain([0, d3.quantile(data.map(d => d.depth).sort(d3.ascending), 0.98)]).nice().range([0, iW]);
-  const y = d3.scaleLinear().domain([4.4, d3.max(data, d => d.mag)]).nice().range([iH, 0]);
-  makeGridlines(g, y, y.ticks(4), iW);
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(4).tickSize(3)).select('.domain').remove();
-
-  g.selectAll('circle')
-    .data(data.filter(d => d.depth <= x.domain()[1]))
-    .enter().append('circle')
-    .attr('cx', d => x(d.depth))
-    .attr('cy', d => y(d.mag))
-    .attr('r', 2.2)
-    .attr('fill', d => depthColor(d.depth))
-    .attr('opacity', 0.34);
-}
-
-function drawMonthlyMax(data) {
-  const monthData = d3.range(12).map(m => {
-    const subset = data.filter(d => d.month === m);
-    return { month: m, maxMag: subset.length ? d3.max(subset, d => d.mag) : 0 };
-  });
-
-  const W = cardWidth('chart5'), H = 200;
-  const m = { top: 10, right: 15, bottom: 30, left: 45 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart5').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scalePoint().domain(MONTHS).range([0, iW]).padding(0.25);
-  const y = d3.scaleLinear().domain([4.5, d3.max(monthData, d => d.maxMag) + 0.3]).range([iH, 0]);
-  makeGridlines(g, y, y.ticks(4), iW);
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).ticks(4).tickSize(3)).select('.domain').remove();
-
-  const line = d3.line().x(d => x(MONTHS[d.month])).y(d => y(d.maxMag)).curve(d3.curveCatmullRom);
-  g.append('path').datum(monthData).attr('d', line).attr('fill', 'none').attr('stroke', '#ff7a59').attr('stroke-width', 2);
-  g.selectAll('circle')
-    .data(monthData)
-    .enter().append('circle')
-    .attr('cx', d => x(MONTHS[d.month]))
-    .attr('cy', d => y(d.maxMag))
-    .attr('r', 4)
-    .attr('fill', '#f0ba5c')
-    .attr('stroke', '#040814')
-    .attr('stroke-width', 1.5);
-}
-
-function drawTopRegions(data) {
-  const regionData = d3.rollups(data, v => v.length, d => d.region)
-    .map(([region, count]) => ({ region, count }))
-    .sort((a,b) => d3.descending(a.count, b.count))
-    .slice(0, 10)
-    .reverse();
-
-  const W = cardWidth('chart6'), H = 200;
-  const m = { top: 10, right: 12, bottom: 25, left: 110 };
-  const iW = W - m.left - m.right, iH = H - m.top - m.bottom;
-  const svg = d3.select('#chart6').attr('height', H).html('');
-  const g = svg.append('g').attr('transform', `translate(${m.left},${m.top})`);
-
-  const x = d3.scaleLinear().domain([0, d3.max(regionData, d => d.count)]).nice().range([0, iW]);
-  const y = d3.scaleBand().domain(regionData.map(d => d.region)).range([iH, 0]).padding(0.22);
-  makeGridlines(g, x, x.ticks(4), iH, 'x');
-  g.append('g').attr('class', 'axis').attr('transform', `translate(0,${iH})`).call(d3.axisBottom(x).ticks(4).tickSize(0)).select('.domain').remove();
-  g.append('g').attr('class', 'axis').call(d3.axisLeft(y).tickSize(0)).select('.domain').remove();
-
-  g.selectAll('rect')
-    .data(regionData)
-    .enter().append('rect')
-    .attr('x', 0)
-    .attr('y', d => y(d.region))
-    .attr('width', d => x(d.count))
-    .attr('height', y.bandwidth())
-    .attr('fill', '#f0ba5c')
-    .attr('opacity', 0.84)
-    .attr('rx', 2);
-}
-
-loadData().then(data => {
-  document.getElementById('loading').classList.add('hidden');
-  document.getElementById('charts').style.display = 'grid';
-  drawMonthlyCounts(data);
-  drawMagnitudeHistogram(data);
-  drawDepthHistogram(data);
-  drawScatter(data);
-  drawMonthlyMax(data);
-  drawTopRegions(data);
-}).catch(err => {
-  console.error(err);
-  document.getElementById('loading').textContent = 'DATA LOAD FAILED. CHECK INTERNET CONNECTION OR USGS API ACCESS.';
-});
+function drawHist(vals){ const {g,iW,iH}=chartFrame('chart4'); const x=d3.scaleLinear().domain([0,100]).range([0,iW]); const bins=d3.bin().domain(x.domain()).thresholds(20)(vals); const y=d3.scaleLinear().domain([0,d3.max(bins,d=>d.length)]).nice().range([iH,0]); gridY(g,y,y.ticks(4),iW); g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(5)); g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4)); addLabels(g,iW,iH,'Relative heat index','Sampled pixel count'); g.selectAll('rect').data(bins).enter().append('rect').attr('x',d=>x(d.x0)+1).attr('y',d=>y(d.length)).attr('width',d=>Math.max(0,x(d.x1)-x(d.x0)-2)).attr('height',d=>iH-y(d.length)).attr('fill',d=>d3.interpolateYlOrRd(((d.x0+d.x1)/2)/100)).attr('rx',1); }
+function drawHemi(data){ const {g,iW,iH}=chartFrame('chart5'); const x=d3.scalePoint().domain(MONTHS).range([0,iW]).padding(.35), y=d3.scaleLinear().domain([0,100]).range([iH,0]); gridY(g,y,y.ticks(4),iW); g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0)); g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4)); addLabels(g,iW,iH,'Month in 2025','Relative heat index'); const lineN=d3.line().x(d=>x(d.month)).y(d=>y(d.north)).curve(d3.curveCatmullRom); const lineS=d3.line().x(d=>x(d.month)).y(d=>y(d.south)).curve(d3.curveCatmullRom); g.append('path').datum(data).attr('d',lineN).attr('fill','none').attr('stroke','#ff5a3c').attr('stroke-width',2); g.append('path').datum(data).attr('d',lineS).attr('fill','none').attr('stroke','#65c7ff').attr('stroke-width',2).attr('stroke-dasharray','5,3'); g.append('text').attr('x',iW-60).attr('y',14).attr('fill','#ff5a3c').attr('font-size','9px').text('NORTH'); g.append('text').attr('x',iW-60).attr('y',30).attr('fill','#65c7ff').attr('font-size','9px').text('SOUTH'); }
+function drawSnapshots(){ const {svg,W,H}=chartFrame('chart6'); const cols=4, thumbW=(W-50)/cols, thumbH=60; const months=[0,3,6,9]; months.forEach((mi,i)=>{ const x=10+i*(thumbW+10), y=35; svg.append('image').attr('class','thumb').attr('x',x).attr('y',y).attr('width',thumbW).attr('height',thumbH).attr('preserveAspectRatio','none').attr('href',gibsUrl(dates[mi],360,180)); svg.append('text').attr('x',x+thumbW/2).attr('y',y+thumbH+18).attr('text-anchor','middle').attr('fill','#8a91a3').attr('font-size','10px').text(MONTHS[mi]); }); svg.append('text').attr('class','axis-label').attr('x',W/2).attr('y',H-10).attr('text-anchor','middle').text('Real NASA GIBS monthly image frames used for sampled analysis'); }
+buildData().then(({monthly,allPixels,lat,hemi})=>{document.getElementById('loading').classList.add('hidden');document.getElementById('charts').style.display='grid';drawMonthly(monthly);drawLat(lat);drawSeasonal(monthly);drawHist(allPixels);drawHemi(hemi);drawSnapshots();}).catch(err=>{console.error(err);document.getElementById('loading').textContent='DATA LOAD FAILED. CHECK INTERNET CONNECTION OR NASA GIBS ACCESS.'});
 </script>
 </body>
 </html>
