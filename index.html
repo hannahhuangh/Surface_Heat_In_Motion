@@ -3,85 +3,333 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Surface Heat in Motion</title>
+  <title>Heat on the Surface</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,700;1,400;1,700&family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+
   <script src="https://d3js.org/d3.v7.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/topojson-client@3/dist/topojson-client.min.js"></script>
+
   <style>
     *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
     :root {
       --bg: #050711;
       --surface: #0b1020;
       --card: rgba(14, 20, 38, 0.92);
       --border: rgba(255, 188, 92, 0.22);
+      --border-strong: rgba(255, 188, 92, 0.5);
       --text: #f4efe7;
       --muted: #8a91a3;
       --accent: #ffb84d;
       --hot: #ff5a3c;
       --cool: #65c7ff;
     }
-    html, body { height: 100%; background: var(--bg); color: var(--text); font-family: 'Space Mono', monospace; overflow: hidden; }
-    body { display: flex; flex-direction: column; min-height: 100vh; }
+
+    html, body {
+      min-height: 100%;
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Space Mono', monospace;
+    }
+
+    body { min-height: 100vh; }
+
     header {
-      flex-shrink: 0; display: flex; justify-content: space-between; align-items: flex-end;
-      gap: 1rem; padding: 1.4rem 2rem 0.9rem; border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-end;
+      gap: 1rem;
+      padding: 1.35rem 2rem 0.95rem;
+      border-bottom: 1px solid var(--border);
       background: linear-gradient(180deg, #090d1a 0%, #050711 100%);
     }
-    .brand h1 { font-family: 'Playfair Display', serif; font-style: italic; font-size: clamp(1.8rem, 3vw, 2.8rem); line-height: 1; color: #fff9ed; }
-    .brand p, .meta { font-size: 0.62rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); line-height: 1.9; }
+
+    .brand h1 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: clamp(1.9rem, 3.2vw, 3rem);
+      line-height: 1;
+      color: #fff9ed;
+    }
+
+    .brand p, .meta {
+      font-size: 0.62rem;
+      letter-spacing: 2px;
+      text-transform: uppercase;
+      color: var(--muted);
+      line-height: 1.9;
+    }
+
     .brand p { margin-top: 0.35rem; }
     .meta { text-align: right; }
-    main { flex: 1; display: grid; grid-template-columns: 1fr 340px; min-height: 0; }
-    .map-wrapper { position: relative; background: #071020; overflow: hidden; cursor: crosshair; }
+
+    .question-strip {
+      display: grid;
+      grid-template-columns: 1fr auto;
+      gap: 1rem;
+      align-items: center;
+      padding: 0.75rem 2rem;
+      border-bottom: 1px solid rgba(255,188,92,0.12);
+      background: rgba(255,184,77,0.04);
+    }
+
+    .question-strip p {
+      color: #d6d1c9;
+      font-size: 0.68rem;
+      letter-spacing: 0.8px;
+      line-height: 1.7;
+    }
+
+    .question-strip strong { color: #fff2d8; }
+
+    .badge {
+      border: 1px solid var(--border-strong);
+      color: var(--accent);
+      padding: 0.45rem 0.7rem;
+      font-size: 0.55rem;
+      letter-spacing: 1.6px;
+      text-transform: uppercase;
+      white-space: nowrap;
+    }
+
+    main {
+      height: calc(100vh - 132px);
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 390px;
+      min-height: 620px;
+    }
+
+    .map-wrapper {
+      position: relative;
+      background: #071020;
+      overflow: hidden;
+      cursor: crosshair;
+      min-height: 100%;
+    }
+
     #map-svg { width: 100%; height: 100%; display: block; }
+
     .loading {
-      position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;
-      gap: 1rem; background: rgba(5,7,17,0.35); color: var(--muted); letter-spacing: 2px; font-size: 0.7rem; pointer-events: none;
+      position: absolute;
+      inset: 0;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      background: rgba(5,7,17,0.35);
+      color: var(--muted);
+      letter-spacing: 2px;
+      font-size: 0.7rem;
+      pointer-events: none;
     }
+
     .loading.hidden { opacity: 0; transition: opacity 0.4s; }
-    .spinner { width: 30px; height: 30px; border-radius: 50%; border: 2px solid rgba(255,255,255,0.12); border-top-color: var(--accent); animation: spin 0.8s linear infinite; }
-    @keyframes spin { to { transform: rotate(360deg); } }
-    .graticule { fill: none; stroke: rgba(255,255,255,0.055); stroke-width: 0.55; }
-    .borders { fill: none; stroke: rgba(255,255,255,0.35); stroke-width: 0.55; }
-    .land-mask { fill: rgba(255,255,255,0.035); stroke: none; }
-    .legend-panel, .hint {
-      position: absolute; background: rgba(5, 7, 17, 0.82); border: 1px solid var(--border); backdrop-filter: blur(8px);
-      padding: 0.8rem 1rem; font-size: 0.58rem; letter-spacing: 1.5px; color: var(--muted);
+
+    .spinner {
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      border: 2px solid rgba(255,255,255,0.12);
+      border-top-color: var(--accent);
+      animation: spin 0.8s linear infinite;
     }
-    .legend-panel { right: 1.2rem; bottom: 1.2rem; width: 210px; }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .graticule { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 0.55; }
+    .borders { fill: none; stroke: rgba(255,255,255,0.38); stroke-width: 0.55; }
+    .land-mask { fill: rgba(255,255,255,0.035); stroke: none; }
+
+    .legend-panel, .hint {
+      position: absolute;
+      background: rgba(5, 7, 17, 0.82);
+      border: 1px solid var(--border);
+      backdrop-filter: blur(8px);
+      padding: 0.8rem 1rem;
+      font-size: 0.58rem;
+      letter-spacing: 1.5px;
+      color: var(--muted);
+    }
+
+    .legend-panel { right: 1.2rem; bottom: 1.2rem; width: 230px; }
     .legend-title { color: #e8e0d4; margin-bottom: 0.45rem; }
     .legend-bar { height: 10px; border-radius: 99px; background: linear-gradient(to right, #88caff, #d8f0ff, #f4e879, #f59b3e, #d83b27); margin-bottom: 0.35rem; }
     .legend-labels { display: flex; justify-content: space-between; }
     .hint { left: 1.2rem; bottom: 1.2rem; line-height: 1.8; }
-    .panel { background: var(--surface); border-left: 1px solid var(--border); padding: 1.1rem; overflow-y: auto; }
-    .panel h2 { font-family: 'Playfair Display', serif; font-style: italic; color: #fff9ed; font-weight: 400; margin-bottom: 0.2rem; }
-    .panel .desc { color: var(--muted); font-size: 0.62rem; line-height: 1.8; letter-spacing: 1px; margin-bottom: 1rem; }
-    .date-card { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
-    .label { font-size: 0.56rem; color: var(--muted); letter-spacing: 1.8px; text-transform: uppercase; margin-bottom: 0.35rem; }
-    #date-value { font-family: 'Playfair Display', serif; font-style: italic; font-size: 1.4rem; color: #fff5e6; }
-    .controls { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.8rem; }
-    .play-row { display: flex; gap: 0.6rem; align-items: center; }
-    button { background: none; border: 1px solid rgba(255,188,92,0.35); color: var(--accent); font-family: 'Space Mono'; font-size: 0.62rem; letter-spacing: 1.5px; padding: 0.45rem 0.75rem; cursor: pointer; }
+
+    .panel {
+      background: var(--surface);
+      border-left: 1px solid var(--border);
+      padding: 1.1rem;
+      overflow-y: auto;
+    }
+
+    .panel h2 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      color: #fff9ed;
+      font-weight: 400;
+      margin-bottom: 0.25rem;
+    }
+
+    .panel .desc {
+      color: var(--muted);
+      font-size: 0.62rem;
+      line-height: 1.8;
+      letter-spacing: 1px;
+      margin-bottom: 1rem;
+    }
+
+    .date-card, .chart-card, .writeup-card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      padding: 1rem;
+      margin-bottom: 1rem;
+    }
+
+    .label {
+      font-size: 0.56rem;
+      color: var(--muted);
+      letter-spacing: 1.8px;
+      text-transform: uppercase;
+      margin-bottom: 0.35rem;
+    }
+
+    .linked-label { color: var(--accent); }
+
+    #date-value {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-size: 1.4rem;
+      color: #fff5e6;
+    }
+
+    .controls { display: flex; flex-direction: column; gap: 0.7rem; margin-top: 0.85rem; }
+    .play-row { display: flex; gap: 0.55rem; align-items: center; flex-wrap: wrap; }
+
+    button {
+      background: none;
+      border: 1px solid rgba(255,188,92,0.35);
+      color: var(--accent);
+      font-family: 'Space Mono';
+      font-size: 0.62rem;
+      letter-spacing: 1.5px;
+      padding: 0.45rem 0.75rem;
+      cursor: pointer;
+    }
+
     button:hover, button.active { background: rgba(255,184,77,0.1); border-color: var(--accent); color: #fff7ea; }
     #time-slider { width: 100%; accent-color: var(--accent); }
-    .chart-card { background: var(--card); border: 1px solid var(--border); padding: 1rem; margin-bottom: 1rem; }
-    .chart-card h3 { font-family: 'Playfair Display', serif; font-style: italic; font-weight: 400; font-size: 1rem; margin-bottom: 0.2rem; }
+
+    .slider-labels {
+      display: flex;
+      justify-content: space-between;
+      color: var(--muted);
+      font-size: 0.52rem;
+      letter-spacing: 1px;
+      margin-top: -0.35rem;
+    }
+
+    .chart-card h3, .writeup-card h3 {
+      font-family: 'Playfair Display', serif;
+      font-style: italic;
+      font-weight: 400;
+      font-size: 1rem;
+      margin-bottom: 0.2rem;
+    }
+
+    .linked-card {
+      border-color: var(--border-strong);
+      box-shadow: 0 0 24px rgba(255,184,77,0.08);
+    }
+
     svg text { font-family: 'Space Mono', monospace; }
     .axis path, .axis line { stroke: rgba(255,255,255,0.18); }
     .axis text { fill: var(--muted); font-size: 9px; }
     .axis-label { fill: #aeb5c5; font-size: 9px; letter-spacing: 1px; }
     .grid-line { stroke: rgba(255,255,255,0.08); stroke-dasharray: 3,3; }
-    #tooltip { position: fixed; display: none; pointer-events: none; z-index: 10; background: rgba(5,7,17,0.94); border: 1px solid var(--border); padding: 0.55rem 0.8rem; font-size: 0.62rem; color: #f7f0e6; letter-spacing: 1px; line-height: 1.7; }
-    .note { color: var(--muted); font-size: 0.55rem; line-height: 1.7; letter-spacing: 0.8px; }
-    @media (max-width: 950px) { html, body { overflow: auto; } main { grid-template-columns: 1fr; } .map-wrapper { min-height: 58vh; } .panel { border-left: none; border-top: 1px solid var(--border); } header { flex-direction: column; align-items: flex-start; } .meta { text-align: left; } }
+    .current-month-marker { stroke: #fff4df; stroke-width: 2; fill: none; pointer-events: none; }
+
+    #tooltip {
+      position: fixed;
+      display: none;
+      pointer-events: none;
+      z-index: 10;
+      background: rgba(5,7,17,0.94);
+      border: 1px solid var(--border);
+      padding: 0.55rem 0.8rem;
+      font-size: 0.62rem;
+      color: #f7f0e6;
+      letter-spacing: 1px;
+      line-height: 1.7;
+      max-width: 275px;
+    }
+
+    .note {
+      color: var(--muted);
+      font-size: 0.55rem;
+      line-height: 1.7;
+      letter-spacing: 0.8px;
+      margin-top: 0.55rem;
+    }
+
+    .strong-note {
+      color: #c9cfdb;
+      border-left: 2px solid var(--accent);
+      padding-left: 0.7rem;
+      margin: 0.55rem 0 0.25rem;
+    }
+
+    .index-note {
+      border: 1px solid rgba(101,199,255,0.18);
+      background: rgba(101,199,255,0.045);
+      padding: 0.8rem;
+      margin-bottom: 1rem;
+    }
+
+    .index-note strong { color: #d9f0ff; }
+
+    .writeup-card p {
+      color: var(--muted);
+      font-size: 0.56rem;
+      line-height: 1.75;
+      letter-spacing: 0.6px;
+      margin-top: 0.55rem;
+    }
+
+    .mini-list {
+      margin-top: 0.55rem;
+      display: grid;
+      gap: 0.45rem;
+    }
+
+    .mini-list div {
+      color: #b7bdc9;
+      font-size: 0.55rem;
+      line-height: 1.6;
+      border-left: 2px solid rgba(255,188,92,0.4);
+      padding-left: 0.55rem;
+    }
+
+    @media (max-width: 980px) {
+      main { height: auto; min-height: 0; grid-template-columns: 1fr; }
+      .map-wrapper { min-height: 58vh; }
+      .panel { border-left: none; border-top: 1px solid var(--border); }
+      header, .question-strip { grid-template-columns: 1fr; flex-direction: column; align-items: flex-start; }
+      .meta { text-align: left; }
+      .badge { white-space: normal; }
+    }
   </style>
 </head>
+
 <body>
 <header>
   <div class="brand">
     <h1>Heat on the Surface</h1>
-    <p>Mapping MODIS Terra land surface temperature in 2025</p>
+    <p>Exploring seasonal land temperature shifts with NASA MODIS</p>
   </div>
   <div class="meta">
     <div>DATASET: NASA MODIS TERRA</div>
@@ -89,6 +337,11 @@
     <div>LAYER: LAND SURFACE TEMP DAY</div>
   </div>
 </header>
+
+<section class="question-strip">
+  <p><strong>Guiding question:</strong> How does land surface heat shift across latitude and season in 2025?</p>
+  <div class="badge">Map + linked chart update together</div>
+</section>
 
 <main>
   <section class="map-wrapper" id="map-wrapper">
@@ -104,13 +357,16 @@
 
   <aside class="panel">
     <h2>Interactive Surface Heat Map</h2>
-    <p class="desc">This map pulls real NASA MODIS Terra daytime land surface temperature imagery for selected 2025 dates using NASA GIBS WMS requests.</p>
+    <p class="desc">
+      Move the time slider to update both the NASA MODIS map and the linked latitude heat profile. Click a latitude point to highlight that band on the map and track it across the year.
+    </p>
 
     <div class="date-card">
       <div class="label">Current date</div>
       <div id="date-value">January 15, 2025</div>
       <div class="controls">
         <input type="range" id="time-slider" min="0" max="11" value="0" step="1" />
+        <div class="slider-labels"><span>JAN</span><span>APR</span><span>JUL</span><span>OCT</span><span>DEC</span></div>
         <div class="play-row">
           <button id="play-btn">▶ PLAY</button>
           <button class="speed-btn active" data-speed="900">1×</button>
@@ -121,17 +377,31 @@
 
     <div class="chart-card">
       <h3>Monthly Heat Index</h3>
-      <div class="label">computed from real MODIS image pixels</div>
+      <div class="label">computed from sampled MODIS image pixels</div>
       <svg id="monthly-chart" width="100%" height="220"></svg>
+      <p class="note">The outlined bar marks the month currently selected by the slider.</p>
     </div>
 
-    <div class="chart-card">
-      <h3>Latitude Heat Profile</h3>
-      <div class="label">current image · sampled by latitude band</div>
+    <div class="chart-card linked-card">
+      <h3>Linked Latitude Heat Profile</h3>
+      <div class="label linked-label">current image · recalculated when the date changes</div>
+      <p class="note strong-note">
+        This chart updates with the selected month. Click a point to select a latitude band and compare that band across all months.
+      </p>
       <svg id="lat-chart" width="100%" height="220"></svg>
     </div>
 
-    <p class="note">Note: the charts use sampled pixel colors from NASA's rendered MODIS LST imagery, so they represent a relative heat intensity index rather than raw Celsius values.</p>
+    <div class="chart-card linked-card">
+      <h3>Selected Latitude Over Time</h3>
+      <div class="label linked-label" id="selected-lat-label">selected band: 0° Equator</div>
+      <svg id="selected-lat-chart" width="100%" height="210"></svg>
+      <p class="note">After you click a latitude point above, this chart shows how that same latitude band changes across all 12 monthly MODIS frames.</p>
+    </div>
+
+    <div class="index-note note">
+      <strong>Relative heat index:</strong> The Relative Heat Index is a simplified color intensity score used to track heat patterns based on visual data rather than raw thermometer readings. Because this dashboard samples RGB pixel colors directly from NASA’s rendered images, we converted those colors into a derived scale ranging from 0 to 100. In this system, higher values represent the "hottest" colors on the map, such as bright reds and oranges, while lower values represent cooler tones like deep blues. While this metric does not provide an exact temperature in degrees Celsius, it serves as a tool for comparing spatial and seasonal shifts, allowing users to see exactly how different regions warm up or cool down relative to one another over time. 
+      <strong>not</strong> raw Celsius temperature.
+    </div>
   </aside>
 </main>
 
@@ -142,9 +412,13 @@ const YEAR = 2025;
 const LAYER = 'MODIS_Terra_Land_Surface_Temp_Day';
 const MONTHS = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
 const dates = MONTHS.map((_, i) => new Date(Date.UTC(YEAR, i, 15)));
+
 let currentIndex = 0;
 let interval = null;
 let speed = 900;
+let monthlyData = [];
+let selectedLat = 0;
+let selectedLatData = [];
 const cache = new Map();
 
 const wrapper = document.getElementById('map-wrapper');
@@ -161,12 +435,24 @@ let path = d3.geoPath(projection);
 
 svg.append('defs').append('clipPath').attr('id','clip').append('rect').attr('width', w).attr('height', h);
 svg.append('rect').attr('width', w).attr('height', h).attr('fill', '#071020');
-const image = svg.append('image').attr('x',0).attr('y',0).attr('width',w).attr('height',h).attr('preserveAspectRatio','none').attr('clip-path','url(#clip)').style('opacity',0.95);
+
+const image = svg.append('image')
+  .attr('x',0).attr('y',0).attr('width',w).attr('height',h)
+  .attr('preserveAspectRatio','none')
+  .attr('clip-path','url(#clip)')
+  .style('opacity',0.95);
+
+const selectedBand = svg.append('rect')
+  .attr('fill', 'rgba(255,184,77,0.16)')
+  .attr('stroke', 'rgba(255,184,77,0.75)')
+  .attr('stroke-width', 1.2)
+  .attr('pointer-events', 'none');
+
 const graticule = svg.append('path').datum(d3.geoGraticule().step([30,30])()).attr('class','graticule').attr('d', path);
 const borderGroup = svg.append('g');
 
 function iso(d){ return d.toISOString().slice(0,10); }
-function display(d){ return d.toLocaleDateString('en-US', {month:'long', day:'numeric', year:'numeric', timeZone:'UTC'}); }
+function display(d){ return d.toLocaleDateString('en-US', { month:'long', day:'numeric', year:'numeric', timeZone:'UTC' }); }
 function gibsUrl(date, imgW=900, imgH=450){
   return 'https://gibs.earthdata.nasa.gov/wms/epsg4326/best/wms.cgi' +
     '?SERVICE=WMS&VERSION=1.3.0&REQUEST=GetMap' +
@@ -186,6 +472,9 @@ function updateMap(idx){
   image.attr('href', gibsUrl(date, Math.round(w), Math.round(h)));
   document.getElementById('loading').classList.add('hidden');
   computeLatitudeProfile(date);
+  drawMonthlyChart(monthlyData);
+  updateSelectedBand();
+  drawSelectedLatChart(selectedLatData);
 }
 
 async function loadBorders(){
@@ -198,6 +487,7 @@ async function loadBorders(){
 
 const zoom = d3.zoom().scaleExtent([1,8]).on('zoom', event => {
   image.attr('transform', event.transform);
+  selectedBand.attr('transform', event.transform);
   graticule.attr('transform', event.transform);
   borderGroup.attr('transform', event.transform);
 });
@@ -213,14 +503,12 @@ svg.on('mousemove', event => {
   tooltip.style.display = 'block';
   tooltip.style.left = `${event.clientX + 14}px`;
   tooltip.style.top = `${event.clientY - 8}px`;
-  tooltip.innerHTML = `<b>${display(dates[currentIndex])}</b><br>${Math.abs(lat).toFixed(2)}°${lat>=0?'N':'S'} · ${Math.abs(lon).toFixed(2)}°${lon>=0?'E':'W'}<br>MODIS Terra LST Day`;
+  tooltip.innerHTML = `<b>${display(dates[currentIndex])}</b><br>${Math.abs(lat).toFixed(2)}°${lat>=0?'N':'S'} · ${Math.abs(lon).toFixed(2)}°${lon>=0?'E':'W'}<br>MODIS Terra LST Day<br><span style="color:#8a91a3;">Linked profile updates by selected month.</span>`;
 }).on('mouseleave', () => tooltip.style.display = 'none');
 
 function heatIndexFromPixel(r,g,b,a){
   if(a < 20) return null;
-  // Remove black/no-data and ocean-like very dark values.
   if(r < 12 && g < 12 && b < 12) return null;
-  // Warm colors have high red/yellow; cool colors have more blue. Index is relative 0-100.
   let val = 50 + (r - b) * 0.28 + (g - 90) * 0.08;
   return Math.max(0, Math.min(100, val));
 }
@@ -256,7 +544,8 @@ async function computeMonthlyIndex(){
     }
     vals.push({month: MONTHS[date.getUTCMonth()], value: n ? sum/n : 0});
   }
-  drawMonthlyChart(vals);
+  monthlyData = vals;
+  drawMonthlyChart(monthlyData);
 }
 
 async function computeLatitudeProfile(date){
@@ -279,9 +568,84 @@ function addAxisLabels(g, iW, iH, xText, yText){
   g.append('text').attr('class','axis-label').attr('x', iW/2).attr('y', iH+34).attr('text-anchor','middle').text(xText);
   g.append('text').attr('class','axis-label').attr('transform','rotate(-90)').attr('x', -iH/2).attr('y', -36).attr('text-anchor','middle').text(yText);
 }
-function gridY(g, y, ticks, iW){ ticks.forEach(t => g.append('line').attr('class','grid-line').attr('x1',0).attr('x2',iW).attr('y1',y(t)).attr('y2',y(t))); }
+function gridY(g, y, ticks, iW){
+  ticks.forEach(t => g.append('line').attr('class','grid-line').attr('x1',0).attr('x2',iW).attr('y1',y(t)).attr('y2',y(t)));
+}
+
+function latLabel(lat){
+  if(lat === 0) return '0° Equator';
+  return `${Math.abs(lat)}°${lat > 0 ? 'N' : 'S'}`;
+}
+
+function updateSelectedBand(){
+  if(!selectedBand) return;
+  const top = projection([0, Math.min(90, selectedLat + 10)])[1];
+  const bottom = projection([0, Math.max(-90, selectedLat - 10)])[1];
+  selectedBand
+    .attr('x', 0)
+    .attr('y', Math.min(top, bottom))
+    .attr('width', w)
+    .attr('height', Math.abs(bottom - top));
+}
+
+async function computeSelectedLatitudeTrend(lat){
+  const vals = [];
+  for(const date of dates){
+    const img = await loadImageData(date, 360, 180);
+    const W = img.width, H = img.height;
+    let sum = 0, n = 0;
+    for(let y0=0; y0<H; y0++){
+      const rowLat = 90 - (y0 / H) * 180;
+      if(Math.abs(rowLat - lat) <= 10){
+        for(let x0=0; x0<W; x0+=3){
+          const i = (y0*W + x0)*4;
+          const v = heatIndexFromPixel(img.data[i], img.data[i+1], img.data[i+2], img.data[i+3]);
+          if(v !== null){ sum += v; n++; }
+        }
+      }
+    }
+    vals.push({month: MONTHS[date.getUTCMonth()], value: n ? sum/n : 0});
+  }
+  selectedLatData = vals;
+  drawSelectedLatChart(vals);
+}
+
+function selectLatitude(lat){
+  selectedLat = lat;
+  document.getElementById('selected-lat-label').textContent = `selected band: ${latLabel(lat)}`;
+  updateSelectedBand();
+  computeSelectedLatitudeTrend(lat);
+}
+
+function drawSelectedLatChart(data){
+  if(!data || data.length === 0) return;
+  const svg = d3.select('#selected-lat-chart').html('');
+  const W = document.getElementById('selected-lat-chart').parentElement.clientWidth - 32, H = 200;
+  const m = {top:10,right:12,bottom:43,left:50}, iW = W-m.left-m.right, iH=H-m.top-m.bottom;
+  svg.attr('height', H);
+  const g = svg.append('g').attr('transform',`translate(${m.left},${m.top})`);
+  const x = d3.scalePoint().domain(data.map(d=>d.month)).range([0,iW]).padding(0.35);
+  const y = d3.scaleLinear().domain([0,100]).range([iH,0]);
+  gridY(g,y,y.ticks(4),iW);
+  g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0));
+  g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4));
+  addAxisLabels(g,iW,iH,'Month in 2025','Relative heat index (0–100)');
+  const line = d3.line().x(d=>x(d.month)).y(d=>y(d.value)).curve(d3.curveCatmullRom);
+  g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#65c7ff').attr('stroke-width',2.4);
+  g.selectAll('circle').data(data).enter().append('circle')
+    .attr('cx',d=>x(d.month)).attr('cy',d=>y(d.value)).attr('r',d=>d.month===MONTHS[currentIndex]?5:3.4)
+    .attr('fill',d=>d.month===MONTHS[currentIndex]?'#ffb84d':'#65c7ff')
+    .on('mouseenter', (event,d) => {
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY - 8}px`;
+      tooltip.innerHTML = `<b>${d.month} 2025 · ${latLabel(selectedLat)}</b><br>Relative heat index: ${d.value.toFixed(1)}`;
+    })
+    .on('mouseleave', () => tooltip.style.display = 'none');
+}
 
 function drawMonthlyChart(data){
+  if(!data || data.length === 0) return;
   const svg = d3.select('#monthly-chart').html('');
   const W = document.getElementById('monthly-chart').parentElement.clientWidth - 32, H = 210;
   const m = {top:10,right:10,bottom:45,left:50}, iW = W-m.left-m.right, iH=H-m.top-m.bottom;
@@ -292,10 +656,27 @@ function drawMonthlyChart(data){
   gridY(g,y,y.ticks(4),iW);
   g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).tickSize(0));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4));
-  addAxisLabels(g,iW,iH,'Month in 2025','Relative heat index');
+  addAxisLabels(g,iW,iH,'Month in 2025','Relative heat index (0–100)');
   g.selectAll('rect').data(data).enter().append('rect')
     .attr('x',d=>x(d.month)).attr('y',d=>y(d.value)).attr('width',x.bandwidth()).attr('height',d=>iH-y(d.value))
-    .attr('fill',d=>d3.interpolateYlOrRd(d.value/100)).attr('rx',2).attr('opacity',0.9);
+    .attr('fill',d=>d3.interpolateYlOrRd(d.value/100)).attr('rx',2).attr('opacity',0.9)
+    .on('mouseenter', (event,d) => {
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY - 8}px`;
+      tooltip.innerHTML = `<b>${d.month} 2025</b><br>Relative heat index: ${d.value.toFixed(1)}`;
+    })
+    .on('mouseleave', () => tooltip.style.display = 'none');
+  const selectedMonth = MONTHS[currentIndex];
+  if(x(selectedMonth) !== undefined){
+    g.append('rect')
+      .attr('class','current-month-marker')
+      .attr('x', x(selectedMonth)-3)
+      .attr('y', 1)
+      .attr('width', x.bandwidth()+6)
+      .attr('height', iH-1)
+      .attr('rx', 4);
+  }
 }
 
 function drawLatChart(data){
@@ -309,28 +690,60 @@ function drawLatChart(data){
   gridY(g,y,y.ticks(4),iW);
   g.append('g').attr('class','axis').attr('transform',`translate(0,${iH})`).call(d3.axisBottom(x).ticks(5).tickFormat(d => `${Math.abs(d)}°${d>=0?'N':'S'}`));
   g.append('g').attr('class','axis').call(d3.axisLeft(y).ticks(4));
-  addAxisLabels(g,iW,iH,'Latitude band','Relative heat index');
+  addAxisLabels(g,iW,iH,'Latitude band','Relative heat index (0–100)');
+  g.append('line').attr('x1',x(0)).attr('x2',x(0)).attr('y1',0).attr('y2',iH).attr('stroke','rgba(255,255,255,0.16)').attr('stroke-dasharray','4,3');
+  g.append('text').attr('x',x(0)+5).attr('y',12).attr('fill','#8a91a3').attr('font-size','9px').text('Equator');
   const line = d3.line().x(d=>x(d.lat)).y(d=>y(d.value)).curve(d3.curveCatmullRom);
-  g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#ffb84d').attr('stroke-width',2);
-  g.selectAll('circle').data(data).enter().append('circle').attr('cx',d=>x(d.lat)).attr('cy',d=>y(d.value)).attr('r',3).attr('fill','#ff5a3c');
+  g.append('path').datum(data).attr('d',line).attr('fill','none').attr('stroke','#ffb84d').attr('stroke-width',2.5);
+  g.selectAll('circle').data(data).enter().append('circle')
+    .attr('cx',d=>x(d.lat)).attr('cy',d=>y(d.value)).attr('r',d=>d.lat===selectedLat?6:3.6)
+    .attr('fill',d=>d.lat===selectedLat?'#65c7ff':'#ff5a3c')
+    .attr('stroke',d=>d.lat===selectedLat?'#fff4df':'none')
+    .attr('stroke-width',1.5)
+    .style('cursor','pointer')
+    .on('click', (event,d) => selectLatitude(d.lat))
+    .on('mouseenter', (event,d) => {
+      tooltip.style.display = 'block';
+      tooltip.style.left = `${event.clientX + 14}px`;
+      tooltip.style.top = `${event.clientY - 8}px`;
+      tooltip.innerHTML = `<b>${display(dates[currentIndex])}</b><br>Latitude band: ${Math.abs(d.lat)}°${d.lat>=0?'N':'S'}<br>Relative heat index: ${d.value.toFixed(1)}`;
+    })
+    .on('mouseleave', () => tooltip.style.display = 'none');
 }
 
 const slider = document.getElementById('time-slider');
 slider.addEventListener('input', () => updateMap(+slider.value));
+
 document.getElementById('play-btn').addEventListener('click', function(){
   if(interval){ clearInterval(interval); interval = null; this.textContent = '▶ PLAY'; return; }
   this.textContent = '⏸ PAUSE';
   interval = setInterval(() => updateMap((currentIndex + 1) % dates.length), speed);
 });
+
 document.querySelectorAll('.speed-btn').forEach(btn => btn.addEventListener('click', function(){
   document.querySelectorAll('.speed-btn').forEach(b=>b.classList.remove('active'));
-  this.classList.add('active'); speed = +this.dataset.speed;
+  this.classList.add('active');
+  speed = +this.dataset.speed;
   if(interval){ clearInterval(interval); interval = setInterval(() => updateMap((currentIndex + 1) % dates.length), speed); }
 }));
+
+window.addEventListener('resize', () => {
+  ({ w, h } = size());
+  svg.attr('viewBox', `0 0 ${w} ${h}`);
+  projection = d3.geoEquirectangular().scale(w / (2 * Math.PI)).translate([w / 2, h / 2]);
+  path = d3.geoPath(projection);
+  svg.select('clipPath rect').attr('width', w).attr('height', h);
+  svg.select('rect').attr('width', w).attr('height', h);
+  image.attr('width',w).attr('height',h);
+  graticule.attr('d', path);
+  borderGroup.selectAll('path').attr('d', path);
+  updateMap(currentIndex);
+});
 
 loadBorders().catch(console.error);
 updateMap(0);
 computeMonthlyIndex().catch(err => console.error('monthly chart failed', err));
+computeSelectedLatitudeTrend(selectedLat).catch(err => console.error('selected latitude chart failed', err));
 </script>
 </body>
 </html>
