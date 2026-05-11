@@ -6,4 +6,4 @@ https://hannahhuangh.github.io/Surface_Heat_In_Motion/exploratory.html
 
 Writeup:
 
-After reviewing the GOES, CMIP6, and NASA MODIS datasets, we were intrigued by the global daily satellite imagery collected by NASA’s Terra satellite. 
+After reviewing the GOES, CMIP6, and NASA MODIS datasets, we were intrigued by the global daily satellite imagery collected by NASA’s Terra satellite. Further exploration of the measurements contained in this data, such as land temperature and vegetation, we decided to look how 
